@@ -1,0 +1,51 @@
+name: check
+
+# Unity 라이선스나 Android SDK가 필요한 빌드는 여기서 돌리지 않는다.
+# 현재 단계의 고정 콘텐츠와 Unity 에셋 참조가 깨지지 않았는지만 빠르게 확인한다.
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: JSON 봉투 확인
+        shell: python
+        run: |
+          import json
+          from pathlib import Path
+
+          expected_kinds = {
+              "guests.json": "guests",
+              "ingredients.json": "ingredients",
+              "dishes.json": "dishes",
+              "lines.json": "lines",
+          }
+
+          for filename, kind in expected_kinds.items():
+              with (Path("data") / filename).open(encoding="utf-8") as source:
+                  package = json.load(source)
+
+              assert package["kind"] == kind, f"{filename}: kind가 {kind}이 아니다"
+              assert package["schema_version"].split(".", 1)[0] == "1", (
+                  f"{filename}: 지원하지 않는 schema_version"
+              )
+              assert isinstance(package["items"], list), f"{filename}: items가 배열이 아니다"
+
+      - name: Unity 프로젝트 파일 확인
+        shell: bash
+        run: |
+          test -f ProjectSettings/ProjectVersion.txt
+          test -f Packages/manifest.json
+          test -f Assets/Scenes/SampleScene.unity
+
+          while IFS= read -r asset; do
+            test -f "${asset}.meta" || {
+              echo "Unity meta 파일이 없습니다: ${asset}"
+              exit 1
+            }
+          done < <(find Assets -type f ! -name '*.meta')
