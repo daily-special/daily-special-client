@@ -24,10 +24,19 @@
 .vscode/
 *.csproj
 *.sln
+*.slnx
 *.user
 *.pidb
 *.booproj
 *.svd
+.vsconfig
+
+# 디버그 심볼·진단·Android 내보내기 중간 파일
+*.pdb
+*.mdb
+*.opendb
+sysinfo.txt
+.gradle/
 
 # OS
 .DS_Store
