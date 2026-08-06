@@ -32,3 +32,13 @@ public sealed class IdealRangeRecord
     public int low;
     public int high;
 }
+
+[Serializable]
+public sealed class LineRecord
+{
+    public string line_id;
+    public string situation;
+    public string subject;
+    public string voice;
+    public string text;
+}

@@ -91,7 +91,8 @@ var settings = new JsonSerializerSettings {
 TextMeshPro 기본 폰트에 **한글이 없다.** 그냥 두면 네모만 나온다. 이 게임은 텍스트가 전부 한국어라 1단계에서 반드시 확인한다.
 
 - `Window → TextMeshPro → Font Asset Creator`
-- Character Set을 `Unicode Range (Hex)`로: `20-7E,AC00-D7A3`
+- Character Set을 `Unicode Range (Hex)`로: `20-7E,A1-FF,2013-2014,2018-201D,2026,AC00-D7A3`
 - Atlas Resolution **4096×4096** (1024로는 한글이 다 안 들어간다)
 
-`20-7E`가 영문·숫자·기호, `AC00-D7A3`이 한글 완성형 11,172자다.
+`20-7E`는 영문·숫자·기호, `A1-FF`와 `2013-2014`, `2018-201D`, `2026`은
+문장부호·줄표·따옴표·말줄임표, `AC00-D7A3`은 한글 완성형 11,172자다.
