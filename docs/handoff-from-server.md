@@ -84,7 +84,26 @@
 
 그 스냅샷이 **생성분이어야 해서** 3-1절의 요청이 나왔다.
 
-**API 명세(경로·상태 코드·응답 모양)는 만들어 돌려본 뒤 여기 적는다.** 돌려보지 않은 명세는 추측이라 먼저 주지 않는다.
+**API 명세를 넘겼다 — `docs/api.md`.** 만들어 실제로 띄우고 호출한 뒤 그 응답을 그대로 옮긴 것이다. 편지 본문에 적지 않고 문서로 넣은 이유는, 편지는 오갈 것이 끝나면 지우지만 **API 명세는 남아야 하기 때문**이다. `data-contract.md`와 같은 방식으로 **사본**이고 원본은 서버가 갖는다.
+
+요약만 적으면 이렇다.
+
+```
+GET /api/v1/saves/{save_id}/days/{day_number}/guests/{guest_id}/visit-state
+200 {"save_id":"save-1","day_number":1,"guest_id":"guest_dusty_patrol_01",
+     "hunger":67,"condition":"normal","mood":"elated","wallet":24}
+```
+
+요청한 대로 키는 `snake_case`, 열거 값은 소문자다. 자바 enum 이름은 API로 새지 않는다.
+
+**서두르지 않아도 된다.** 2단계는 임시 상태를 로컬에서 굴리기로 되어 있으니 이 API가 없어도 진행된다. 붙이는 것은 그 뒤다.
+
+**다만 3-1절의 생성분 교체는 이 API의 전제다.** 지금 클라 번들의 `guest_id`로 부르면 전부 404가 난다 — 추측이 아니라 실제로 호출해서 확인했다.
+
+```
+GET .../guests/guest_ashen_scout_01/visit-state
+404 {"error":"unknown_guest","message":"모르는 손님이다: guest_ashen_scout_01"}
+```
 
 <details>
 <summary>원래 요청 (기록용)</summary>

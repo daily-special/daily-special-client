@@ -6,7 +6,8 @@
 
 - `docs/client-design.md`: 클라이언트의 책임과 구현 순서
 - `docs/conventions.md`: 계층, 테스트, 데이터 로딩 규약
-- `docs/data-contract.md`: 파이프라인·서버와 공유하는 JSON 계약
+- `docs/data-contract.md`: 파이프라인이 뱉는 고정 콘텐츠의 JSON 계약 (사본)
+- `docs/api.md`: 서버 런타임 API 명세 (사본). **`data-contract.md`와 다른 것이다** — 이쪽은 플레이 중에 바뀌는 상태를 다룬다
 - `docs/handoff-from-server.md`: 서버 쪽에서 온 편지. 명세가 아니라 **요청과 예고**다
 - `docs/handoff-to-server.md`: 서버로 보내는 우편함. **답과 질문을 여기 적는다**
 
