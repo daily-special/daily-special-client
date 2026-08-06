@@ -63,7 +63,7 @@ Assets/Tests/
 var json = Resources.Load<TextAsset>("guests").text;
 ```
 
-`data/*.json`을 `Assets/Resources/`에 둔다.
+콘텐츠 JSON은 `Assets/Resources/*.json`에 둔다.
 
 **JSON은 `snake_case`다** (계약 1-1절). Newtonsoft(`com.unity.nuget.newtonsoft-json`)에 네이밍 전략을 준다.
 
