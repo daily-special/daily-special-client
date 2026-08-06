@@ -7,7 +7,10 @@
 - `docs/client-design.md`: 클라이언트의 책임과 구현 순서
 - `docs/conventions.md`: 계층, 테스트, 데이터 로딩 규약
 - `docs/data-contract.md`: 파이프라인·서버와 공유하는 JSON 계약
-- `docs/handoff-from-server.md`: 서버 쪽에서 온 편지. 명세가 아니라 **요청과 예고**다. 그 파일이 지워지면 이 줄도 지운다
+- `docs/handoff-from-server.md`: 서버 쪽에서 온 편지. 명세가 아니라 **요청과 예고**다
+- `docs/handoff-to-server.md`: 서버로 보내는 우편함. **답과 질문을 여기 적는다**
+
+두 handoff 파일은 편지지 명세가 아니다. 오갈 것이 끝나면 지운다 — 그때 이 두 줄도 지운다.
 
 저장소 문서는 각각 자체 완결이어야 한다. 다른 저장소의 문서를 참조하도록 새로 쓰지 않는다.
 
