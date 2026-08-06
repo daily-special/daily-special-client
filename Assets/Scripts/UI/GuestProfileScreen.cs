@@ -1,19 +1,19 @@
 using System;
+using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 public sealed class GuestProfileScreen : MonoBehaviour
 {
-    [SerializeField] private Text nameLabel;
-    [SerializeField] private Text titleLabel;
-    [SerializeField] private Text bioLabel;
-    [SerializeField] private Text statusLabel;
+    [SerializeField] private TextMeshProUGUI nameLabel;
+    [SerializeField] private TextMeshProUGUI titleLabel;
+    [SerializeField] private TextMeshProUGUI bioLabel;
+    [SerializeField] private TextMeshProUGUI statusLabel;
 
     public void Configure(
-        Text configuredNameLabel,
-        Text configuredTitleLabel,
-        Text configuredBioLabel,
-        Text configuredStatusLabel)
+        TextMeshProUGUI configuredNameLabel,
+        TextMeshProUGUI configuredTitleLabel,
+        TextMeshProUGUI configuredBioLabel,
+        TextMeshProUGUI configuredStatusLabel)
     {
         nameLabel = configuredNameLabel;
         titleLabel = configuredTitleLabel;
@@ -26,12 +26,19 @@ public sealed class GuestProfileScreen : MonoBehaviour
         try
         {
             ContentPackage<GuestRecord> guests = ContentLoader.LoadGuests();
+            ContentPackage<LineRecord> lines = ContentLoader.LoadLines();
             GuestRecord guest = guests.items[0];
+            LineRecord wearyLine = lines.items.Find(line => line.line_id == "line_greet_weary_01");
+
+            if (wearyLine == null)
+            {
+                throw new InvalidOperationException("weary 인사 대사를 찾지 못했습니다.");
+            }
 
             nameLabel.text = guest.name;
             titleLabel.text = guest.title;
             bioLabel.text = guest.bio;
-            statusLabel.text = "목 JSON을 읽었습니다";
+            statusLabel.text = wearyLine.text;
         }
         catch (Exception exception)
         {

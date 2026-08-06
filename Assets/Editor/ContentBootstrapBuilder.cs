@@ -3,17 +3,18 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using TMPro;
 
 public static class ContentBootstrapBuilder
 {
-    private const string SourceFontPath = "Assets/Fonts/NotoSansCJKkr-Regular.otf";
+    private const string FontAssetPath = "Assets/Fonts/NotoSansCJKkr-Regular Extended SDF.asset";
     [MenuItem("Daily Special/1단계 씬 만들기")]
     public static void Build()
     {
-        Font font = AssetDatabase.LoadAssetAtPath<Font>(SourceFontPath);
+        TMP_FontAsset font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FontAssetPath);
         if (font == null)
         {
-            throw new System.InvalidOperationException("Noto Sans KR 원본 폰트를 찾지 못했습니다.");
+            throw new System.InvalidOperationException("Noto Sans KR TMP 폰트 아틀라스를 찾지 못했습니다.");
         }
 
         Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
@@ -27,15 +28,15 @@ public static class ContentBootstrapBuilder
         scaler.referenceResolution = new Vector2(1080, 1920);
 
         GameObject panel = CreatePanel(canvasObject.transform);
-        Text nameLabel = CreateLabel(panel.transform, font, "Name", 64, FontStyle.Bold);
-        Text titleLabel = CreateLabel(panel.transform, font, "Title", 34, FontStyle.Normal);
-        Text bioLabel = CreateLabel(panel.transform, font, "Bio", 38, FontStyle.Normal);
-        Text statusLabel = CreateLabel(panel.transform, font, "Status", 26, FontStyle.Normal);
+        TextMeshProUGUI nameLabel = CreateLabel(panel.transform, font, "Name", 64, FontStyles.Bold);
+        TextMeshProUGUI titleLabel = CreateLabel(panel.transform, font, "Title", 34, FontStyles.Normal);
+        TextMeshProUGUI bioLabel = CreateLabel(panel.transform, font, "Bio", 38, FontStyles.Normal);
+        TextMeshProUGUI statusLabel = CreateLabel(panel.transform, font, "Status", 30, FontStyles.Normal);
 
         SetAnchors(nameLabel.rectTransform, new Vector2(0.12f, 0.67f), new Vector2(0.88f, 0.83f));
         SetAnchors(titleLabel.rectTransform, new Vector2(0.12f, 0.58f), new Vector2(0.88f, 0.67f));
         SetAnchors(bioLabel.rectTransform, new Vector2(0.12f, 0.30f), new Vector2(0.88f, 0.57f));
-        SetAnchors(statusLabel.rectTransform, new Vector2(0.12f, 0.18f), new Vector2(0.88f, 0.25f));
+        SetAnchors(statusLabel.rectTransform, new Vector2(0.12f, 0.10f), new Vector2(0.88f, 0.17f));
 
         GameObject controller = new("GuestProfileScreen", typeof(GuestProfileScreen));
         controller.GetComponent<GuestProfileScreen>().Configure(nameLabel, titleLabel, bioLabel, statusLabel);
@@ -64,23 +65,23 @@ public static class ContentBootstrapBuilder
         cameraObject.tag = "MainCamera";
     }
 
-    private static Text CreateLabel(
+    private static TextMeshProUGUI CreateLabel(
         Transform parent,
-        Font font,
+        TMP_FontAsset font,
         string objectName,
         int fontSize,
-        FontStyle style)
+        FontStyles style)
     {
-        GameObject label = new(objectName, typeof(RectTransform), typeof(Text));
+        GameObject label = new(objectName, typeof(RectTransform), typeof(TextMeshProUGUI));
         label.transform.SetParent(parent, false);
-        Text text = label.GetComponent<Text>();
+        TextMeshProUGUI text = label.GetComponent<TextMeshProUGUI>();
         text.font = font;
         text.fontSize = fontSize;
         text.fontStyle = style;
         text.color = new Color(0.95f, 0.92f, 0.84f, 1f);
-        text.alignment = TextAnchor.UpperLeft;
-        text.horizontalOverflow = HorizontalWrapMode.Wrap;
-        text.verticalOverflow = VerticalWrapMode.Overflow;
+        text.alignment = TextAlignmentOptions.TopLeft;
+        text.enableWordWrapping = true;
+        text.overflowMode = TextOverflowModes.Overflow;
         return text;
     }
 

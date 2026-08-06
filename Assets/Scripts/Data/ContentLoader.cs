@@ -37,6 +37,27 @@ public static class ContentLoader
         return package;
     }
 
+    public static ContentPackage<LineRecord> LoadLines()
+    {
+        TextAsset source = Resources.Load<TextAsset>("lines");
+        if (source == null)
+        {
+            throw new InvalidOperationException("Resources에 lines.json이 없습니다.");
+        }
+
+        ContentPackage<LineRecord> package = JsonConvert.DeserializeObject<ContentPackage<LineRecord>>(
+            source.text,
+            Settings);
+
+        if (package == null)
+        {
+            throw new InvalidOperationException("lines.json을 읽지 못했습니다.");
+        }
+
+        ValidatePackage(package, "lines");
+        return package;
+    }
+
     private static void ValidatePackage<T>(ContentPackage<T> package, string expectedKind)
     {
         if (package.kind != expectedKind)
