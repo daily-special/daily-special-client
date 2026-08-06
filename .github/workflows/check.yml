@@ -27,7 +27,7 @@ jobs:
           }
 
           for filename, kind in expected_kinds.items():
-              with (Path("data") / filename).open(encoding="utf-8") as source:
+              with (Path("Assets/Resources") / filename).open(encoding="utf-8") as source:
                   package = json.load(source)
 
               assert package["kind"] == kind, f"{filename}: kind가 {kind}이 아니다"
