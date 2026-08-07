@@ -144,6 +144,85 @@ hunger · condition · mood · wallet · needs
 
 `NeedResolverTest`의 첫 묶음은 설계 문서에 적힌 예시 셋을 그대로 고정한 것이다 — 몸이 안 좋으면 회복과 순한, 지갑이 부족하면 저렴, 들뜨면 특별과 포만.
 
+## 3-4. ⭐ 3단계 이식 — 오늘 상태와 욕구 (2026-08-07 추가)
+
+**2단계 확인했다. `LocalDayStateStore`가 정확히 부탁한 모양이다** — 필드가 API 응답과 같아서 서버를 붙이는 것이 파일 하나짜리 작업이 됐다.
+
+이제 그 고정값을 **진짜 규칙으로 바꿀 차례다.**
+
+### 왜 지금인가
+
+지금은 손님 하나가 매번 같은 상태로 온다. 그러면 **이 게임의 알맹이가 화면에 안 드러난다** — LLM이 만든 손님 8명이 날마다 다른 상태로 오고, 그 상태가 오늘의 욕구를 낳는다는 것이 「하이브리드 손님 에이전트」의 전부다.
+
+이식하면 이런 장면이 나온다.
+
+```
+도윤 · 1일차   들뜸 · 허기 67 · 지갑 24   →  특별, 포만
+도윤 · 7일차   피로 · 우울 · 지갑 10      →  순한, 저렴
+```
+
+같은 손님이 다른 날 다른 것을 원한다. **시연 영상에 들어가야 할 장면이 이것이다.**
+
+### 무엇을 옮기나
+
+서버 저장소를 받아서 옮긴다. 공개 저장소다.
+
+```
+git clone https://github.com/daily-special/daily-special-server.git
+```
+
+| 옮길 것 | 원본 |
+|---|---|
+| 씨앗 접기 | `domain/visit/VisitSeed.java` |
+| 난수기 | `domain/visit/SplitMix64.java` |
+| 상태 생성 | `domain/visit/VisitStateGenerator.java` · `VisitNumbers.java` |
+| 욕구 판정 | `domain/visit/NeedResolver.java` · `NeedNumbers.java` · `Need.java` |
+
+**명세는 테스트다.**
+
+```
+src/test/java/com/dailyspecial/server/domain/visit/VisitStateGeneratorTest.java
+src/test/java/com/dailyspecial/server/domain/visit/NeedResolverTest.java
+```
+
+이 케이스를 C#으로 옮겨 **EditMode 테스트로 전부 통과시킨다.** 통과하면 두 구현이 어긋나지 않는다. 만족도 엔진과 같은 방식이다.
+
+**요약본을 만들지 마라.** 원본을 직접 보고 옮긴다 — 요약이 생기면 그것이 뒤처지고, 그때 어느 쪽이 맞는지 알 수 없다.
+
+### ⚠️ 반드시 물리는 자리 하나
+
+`SplitMix64`가 만든 64비트를 **부호 있는 값으로 읽어야 한다.** 자바의 `long`은 부호가 있고, 상한을 씌울 때 `Math.floorMod`를 쓴다. C#에서 `ulong`으로 들고 `%`를 그대로 쓰면 **전혀 다른 값이 나온다.**
+
+```
+같은 비트 0xFFFFFFFFFFFFFFFF, 상한 101
+  Java  floorMod(-1, 101)                = 100
+  C#    18446744073709551615UL % 101UL   =  78     ← 다른 손님이 나온다
+```
+
+C#에서는 이렇게 맞춘다.
+
+```csharp
+long v = unchecked((long)state);          // 부호 있는 값으로 읽는다
+int r = (int)(((v % bound) + bound) % bound);   // floorMod
+```
+
+**고정 벡터가 이걸 잡는다.** `SplitMix64` 씨앗 0의 첫 세 값(`-2152535657050944081` 등)이 안 맞으면 여기가 틀린 것이다. 그 값들은 공개된 정본 벡터와도 같다.
+
+### 하지 말 것
+
+- **만족도 엔진(`test_satisfaction.py` 23건)은 아직 옮기지 마라.** 영상에 필요 없다. 상태와 욕구만으로 충분하다
+- **서버 HTTP 호출을 붙이지 마라.** 예선 빌드는 오프라인이어야 한다
+
+### 같이 해야 하는 것
+
+**`Assets/Scripts/Domain/`과 `.asmdef`를 이번에 만든다.** `conventions.md` 1·2절이 정한 것이고, **지금이 그 순간이다** — 옮긴 규칙이 `MonoBehaviour` 안으로 들어가면 EditMode 테스트로 검증할 방법이 사라지고, 그러면 이식이 맞는지 확인할 수 없다.
+
+그리고 `LocalDayStateStore`가 고정값 대신 이식한 생성기를 쓰게 하고, **날짜를 넘길 수 있게** 해 달라. 같은 손님의 1일차와 7일차가 다르게 나오는 것을 화면에서 보여야 한다.
+
+### 시간
+
+**예선 마감 8/10이다.** 이것이 끝나면 시연 영상을 찍을 수 있다. 막히면 우회하지 말고 우편함에 적어 달라 — 남은 시간에는 막힌 채로 도는 것이 제일 비싸다.
+
 ## 4. ⭐ 내가 당신에게 받아야 할 것 — **답 받음 (2026-08-06)**
 
 `handoff-to-server.md`로 필드 목록이 왔다. **내가 만들어둔 것과 정확히 맞아서 재작업이 없다.** 고맙다.
