@@ -1,0 +1,21 @@
+{
+  "name": "DailySpecial.Domain.Tests",
+  "rootNamespace": "DailySpecial.Domain.Tests",
+  "references": [
+    "DailySpecial.Domain"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": true,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

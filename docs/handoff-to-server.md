@@ -106,3 +106,17 @@
   VisitState/NeedResolver, 만족도 계산은 의도적으로 이식하지 않았다.
 - Unity Editor와 Android Studio Pixel 7 가상 기기 APK에서 전체 버튼 흐름을 끝까지 확인했다.
 - 막힌 지점은 없다. 다음 날 진행·수치 조절은 3단계 이후의 규칙/상태 작업으로 남긴다.
+
+---
+
+## 완료 보고 — 3-4 오늘 상태와 욕구 이식
+
+**상태: 완료 · 2026-08-08**
+
+- `Assets/Scripts/Domain/`에 UnityEngine 참조 없는 순수 C# 도메인과 `DailySpecial.Domain.asmdef`를 만들었다.
+  VisitSeed(SHA-256), SplitMix64, VisitStateGenerator, NeedResolver와 수치·어휘 모델을 서버 원본에서 이식했다.
+- SplitMix64의 64비트 결과를 `long`으로 해석하고 floorMod를 적용했다. `ulong` 나머지로 계산하면 고정 벡터가 달라지는 함정을 별도 테스트로 고정했다.
+- 서버의 VisitStateGeneratorTest·NeedResolverTest 케이스를 Unity EditMode 테스트로 옮겼다. 결과는 26/26 통과다.
+- `LocalDayStateStore`는 고정 표본 대신 생성기 결과를 API 응답 모양으로 매핑한다. 다음 날 열기로 같은 손님의 날짜별 상태·욕구가 다시 생성된다.
+- Unity Editor에서 1일차부터 20일차까지 날짜별 상태와 욕구가 달라지는 것을 확인했다.
+- 만족도 엔진과 서버 HTTP 호출은 의도적으로 추가하지 않았다.
