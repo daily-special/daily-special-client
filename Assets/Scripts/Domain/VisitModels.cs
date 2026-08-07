@@ -100,17 +100,35 @@ public sealed class VisitSeed
 public sealed class VisitState : IEquatable<VisitState>
 {
     public VisitState(int hunger, Condition condition, Mood mood, int wallet)
+        : this(hunger, condition, mood, wallet, Array.Empty<string>())
     {
+    }
+
+    // 만족도 엔진은 오늘의 욕구와 지갑만 읽는다.
+    public VisitState(IEnumerable<string> needs, int wallet)
+        : this(0, Condition.Normal, Mood.Calm, wallet, needs)
+    {
+    }
+
+    private VisitState(int hunger, Condition condition, Mood mood, int wallet, IEnumerable<string> needs)
+    {
+        if (needs == null)
+        {
+            throw new ArgumentException("욕구 목록이 없다", nameof(needs));
+        }
+
         Hunger = hunger;
         Condition = condition;
         Mood = mood;
         Wallet = wallet;
+        Needs = needs.ToArray();
     }
 
     public int Hunger { get; }
     public Condition Condition { get; }
     public Mood Mood { get; }
     public int Wallet { get; }
+    public IReadOnlyList<string> Needs { get; }
 
     public bool Equals(VisitState other)
     {
@@ -118,11 +136,17 @@ public sealed class VisitState : IEquatable<VisitState>
             && Hunger == other.Hunger
             && Condition == other.Condition
             && Mood == other.Mood
-            && Wallet == other.Wallet;
+            && Wallet == other.Wallet
+            && Needs.SequenceEqual(other.Needs);
     }
 
     public override bool Equals(object obj) => Equals(obj as VisitState);
-    public override int GetHashCode() => HashCode.Combine(Hunger, Condition, Mood, Wallet);
+    public override int GetHashCode()
+    {
+        int hash = HashCode.Combine(Hunger, Condition, Mood, Wallet);
+        foreach (string need in Needs) hash = HashCode.Combine(hash, need);
+        return hash;
+    }
 }
 
 public sealed class GuestTraits
@@ -183,7 +207,9 @@ public sealed class VisitNumbers
     public int WalletMin { get; }
     public int WalletMax { get; }
     public double AffordableWalletMaxRatio { get; }
-    public int AffordableWalletMax => WalletMin + (int)Math.Round((WalletMax - WalletMin) * AffordableWalletMaxRatio);
+    public int AffordableWalletMax => WalletMin + (int)Math.Round(
+        (WalletMax - WalletMin) * AffordableWalletMaxRatio,
+        MidpointRounding.AwayFromZero);
 
     public static VisitNumbers Defaults() => new(
         0, 100,
