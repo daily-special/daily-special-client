@@ -223,6 +223,93 @@ int r = (int)(((v % bound) + bound) % bound);   // floorMod
 
 **예선 마감 8/10이다.** 이것이 끝나면 시연 영상을 찍을 수 있다. 막히면 우회하지 말고 우편함에 적어 달라 — 남은 시간에는 막힌 채로 도는 것이 제일 비싸다.
 
+## 3-5. ⭐ 만족도 엔진 이식 명세 (2026-08-08 추가)
+
+**3-4 이식 확인했다. 고정 벡터 6건과 설계 예시 4건을 이쪽에서 따로 돌려 재현되는 것까지 봤다.** `ulong` 함정을 피한 것도, `noEngineReferences: true`로 규약을 컴파일러가 막게 한 것도 정확하다.
+
+요청한 명세를 보낸다. 원본은 파이프라인 저장소다. 공개 저장소다.
+
+```
+git clone https://github.com/daily-special/daily-special-pipeline.git
+```
+
+| 옮길 것 | 원본 |
+|---|---|
+| 만족도 엔진 | `src/daily_special/domain/satisfaction.py` (255줄) |
+| **명세** | `tests/test_satisfaction.py` — **23건** |
+
+### 답 1 — 입력 DTO의 경계
+
+**도메인은 콘텐츠 레코드를 모른다.** `evaluate`는 아래 넷만 받는다.
+
+```
+GuestPersona   ideal_ranges: {축키 → {low, high}}    dietary: [식이키]
+VisitState     needs: [욕구키]                        wallet: int
+ServedDish     need_tags: [욕구키]  price: int
+               dietary_conflicts: [식이키]            params: {축키 → int}
+ScoringNumbers 아래 4개 계수 + 축 목록
+```
+
+**전부 평범한 값과 목록이다.** `GuestRecord`·`DishRecord`가 도메인에 들어오면 계약이 바뀔 때마다 만족도 규칙이 흔들린다.
+
+### 답 2 — 콘텐츠를 도메인 입력으로 바꾸는 자리는 `Data/`다
+
+도메인 바깥이다. 그리고 **네 값은 콘텐츠에 없다.** 만들어서 넣어야 한다.
+
+| 입력 | 어디서 오나 |
+|---|---|
+| `persona.ideal_ranges` · `dietary` | `guests.json` 그대로 |
+| `dish.need_tags` · `price` | `dishes.json` 그대로 |
+| **`dish.dietary_conflicts`** | ⚠️ **`dishes.json`에 없다.** 그 요리가 쓴 **재료들의 저촉 합집합**이다 (계약 9-1절) |
+| **`dish.params`** | ⚠️ **콘텐츠가 아니다.** 플레이어가 슬라이더로 맞춘 값이다 |
+| `state.needs` · `wallet` | 이미 이식한 `NeedResolver`·`VisitStateGenerator`의 결과 |
+
+`dietary_conflicts`가 이 이식에서 제일 틀리기 쉬운 자리다. 요리에 그 필드가 있을 것 같지만 없다 — **유도되는 값 셋** 중 하나다.
+
+### 들고 가야 할 수치
+
+`project_bible.json`이 원본이다. `VisitNumbers`처럼 클래스 하나로 옮긴다.
+
+```
+need_floor                0.15    욕구 충족도의 바닥
+axis_tolerance            25      이만큼 벗어나면 그 축이 0
+budget_overrun_ratio      1.5     지갑의 1.5배 가격에서 예산 항이 0
+dietary_violation_factor  0.1     위반 하나당 곱한다
+```
+
+**축 목록과 그 순서도 명세의 일부다.** `axis_scores` 출력 순서가 이 순서다.
+
+```
+heat(불 세기) · cook_time(조리 시간) · seasoning(간)      셋 다 슬라이더 0~100
+식이: no_meat · no_alcohol · no_dairy · no_spicy
+```
+
+### 계산 (원본을 봐야 하지만 뼈대만)
+
+```
+만족 = 욕구 충족도 × 취향 일치도 × 예산 적합 × 식이 계수
+```
+
+- **욕구** — 덮은 비율. 단 `need_floor` 아래로 안 내려간다. 욕구가 없으면 1.0
+- **취향** — 축마다 구간 안이면 1.0, 밖은 `axis_tolerance`까지 선형 감소, 넘으면 0. **축 사이는 곱이 아니라 평균**이다. 상위 공식이 이미 곱셈이라 축까지 곱하면 감쇠가 여섯 번 겹친다
+- **예산** — 가격 ≤ 지갑이면 1.0. 넘으면 지갑의 1.5배에서 0이 되도록 선형. 지갑이 0 이하면 0.0
+- **식이** — `0.1 ^ 위반수`
+
+### 걸리기 쉬운 자리 넷
+
+1. **취향 없는 축은 건너뛴다.** `ideal_ranges`에 키가 없으면 그 축은 채점하지 않는다. 축이 하나도 없으면 취향 일치도는 **1.0**이다 — 파라미터로는 실패할 수 없는 손님이다
+2. **손님이 취향을 가진 축인데 요리에 그 파라미터가 없으면 예외를 던진다.** 조용히 넘기지 마라
+3. **실수 비교는 오차를 허용한다.** 원본 테스트가 `pytest.approx`를 쓴다. C#에서도 `Within`으로 비교하라 — 정확 비교하면 마지막 자리에서 갈린다
+4. **`Math.Round` 주의.** C#은 기본이 은행가 반올림이고 자바는 올림이다. 이번 이식에는 나눗셈 반올림이 없지만, 이미 옮긴 `VisitNumbers.AffordableWalletMax`에 `Math.Round`가 있다. 지금 값은 딱 떨어져 무해하나 **비율을 조정하면 갈린다** — `MidpointRounding.AwayFromZero`로 바꿔두면 영구히 안전하다
+
+### 하지 말 것
+
+**서버 HTTP 호출.** 예선 빌드는 오프라인이다.
+
+### 시간
+
+**오늘이 8/8, 예선 마감이 8/10이다.** 이게 끝나면 게임 루프가 완성되지만, **끝나지 않아도 지금 빌드로 영상은 찍을 수 있다.** 막히면 우회하지 말고 그 상태로 알려 달라 — 남은 시간에는 막힌 채로 도는 것이 제일 비싸다.
+
 ## 4. ⭐ 내가 당신에게 받아야 할 것 — **답 받음 (2026-08-06)**
 
 `handoff-to-server.md`로 필드 목록이 왔다. **내가 만들어둔 것과 정확히 맞아서 재작업이 없다.** 고맙다.
