@@ -32,15 +32,27 @@ public static class ContentBootstrapBuilder
         TextMeshProUGUI guestLabel = CreateLabel(panel.transform, font, "Guest", 46, FontStyles.Bold);
         TextMeshProUGUI detailLabel = CreateLabel(panel.transform, font, "Detail", 32, FontStyles.Normal);
         TextMeshProUGUI dialogueLabel = CreateLabel(panel.transform, font, "Dialogue", 34, FontStyles.Normal);
+        Slider heatSlider = CreateSlider(panel.transform, "HeatSlider");
+        Slider cookTimeSlider = CreateSlider(panel.transform, "CookTimeSlider");
+        Slider seasoningSlider = CreateSlider(panel.transform, "SeasoningSlider");
+        TextMeshProUGUI heatValueLabel = CreateLabel(panel.transform, font, "HeatValue", 28, FontStyles.Normal);
+        TextMeshProUGUI cookTimeValueLabel = CreateLabel(panel.transform, font, "CookTimeValue", 28, FontStyles.Normal);
+        TextMeshProUGUI seasoningValueLabel = CreateLabel(panel.transform, font, "SeasoningValue", 28, FontStyles.Normal);
         Button actionButton = CreateButton(panel.transform, font, out TextMeshProUGUI actionLabel);
 
         titleLabel.text = "오늘의 정식";
         SetAnchors(titleLabel.rectTransform, new Vector2(0.10f, 0.86f), new Vector2(0.90f, 0.95f));
         SetAnchors(phaseLabel.rectTransform, new Vector2(0.10f, 0.76f), new Vector2(0.90f, 0.84f));
         SetAnchors(guestLabel.rectTransform, new Vector2(0.10f, 0.64f), new Vector2(0.90f, 0.74f));
-        SetAnchors(detailLabel.rectTransform, new Vector2(0.10f, 0.42f), new Vector2(0.90f, 0.62f));
-        SetAnchors(dialogueLabel.rectTransform, new Vector2(0.10f, 0.25f), new Vector2(0.90f, 0.38f));
-        SetAnchors(actionButton.GetComponent<RectTransform>(), new Vector2(0.10f, 0.10f), new Vector2(0.90f, 0.20f));
+        SetAnchors(detailLabel.rectTransform, new Vector2(0.10f, 0.48f), new Vector2(0.90f, 0.62f));
+        SetAnchors(dialogueLabel.rectTransform, new Vector2(0.10f, 0.39f), new Vector2(0.90f, 0.46f));
+        SetAnchors(heatValueLabel.rectTransform, new Vector2(0.10f, 0.33f), new Vector2(0.38f, 0.37f));
+        SetAnchors(cookTimeValueLabel.rectTransform, new Vector2(0.10f, 0.27f), new Vector2(0.38f, 0.31f));
+        SetAnchors(seasoningValueLabel.rectTransform, new Vector2(0.10f, 0.21f), new Vector2(0.38f, 0.25f));
+        SetAnchors(heatSlider.GetComponent<RectTransform>(), new Vector2(0.40f, 0.33f), new Vector2(0.90f, 0.37f));
+        SetAnchors(cookTimeSlider.GetComponent<RectTransform>(), new Vector2(0.40f, 0.27f), new Vector2(0.90f, 0.31f));
+        SetAnchors(seasoningSlider.GetComponent<RectTransform>(), new Vector2(0.40f, 0.21f), new Vector2(0.90f, 0.25f));
+        SetAnchors(actionButton.GetComponent<RectTransform>(), new Vector2(0.10f, 0.10f), new Vector2(0.90f, 0.18f));
 
         GameObject stateObject = new("LocalDayStateStore", typeof(LocalDayStateStore));
         LocalDayStateStore stateStore = stateObject.GetComponent<LocalDayStateStore>();
@@ -48,7 +60,8 @@ public static class ContentBootstrapBuilder
 
         GameObject screenObject = new("DayCycleScreen", typeof(DayCycleScreen));
         DayCycleScreen screen = screenObject.GetComponent<DayCycleScreen>();
-        screen.Configure(stateStore, phaseLabel, guestLabel, detailLabel, dialogueLabel, actionLabel, actionButton);
+        screen.Configure(stateStore, phaseLabel, guestLabel, detailLabel, dialogueLabel, actionLabel, actionButton,
+            heatSlider, cookTimeSlider, seasoningSlider, heatValueLabel, cookTimeValueLabel, seasoningValueLabel);
 
         EditorSceneManager.SaveScene(scene, "Assets/Scenes/SampleScene.unity");
         AssetDatabase.SaveAssets();
@@ -119,6 +132,41 @@ public static class ContentBootstrapBuilder
         label.rectTransform.offsetMin = Vector2.zero;
         label.rectTransform.offsetMax = Vector2.zero;
         return buttonObject.GetComponent<Button>();
+    }
+
+    private static Slider CreateSlider(Transform parent, string objectName)
+    {
+        GameObject sliderObject = new(objectName, typeof(RectTransform), typeof(Image), typeof(Slider));
+        sliderObject.transform.SetParent(parent, false);
+        Image background = sliderObject.GetComponent<Image>();
+        background.color = new Color(0.19f, 0.25f, 0.32f, 1f);
+
+        GameObject fillObject = new("Fill", typeof(RectTransform), typeof(Image));
+        fillObject.transform.SetParent(sliderObject.transform, false);
+        Image fill = fillObject.GetComponent<Image>();
+        fill.color = new Color(0.32f, 0.46f, 0.44f, 1f);
+        RectTransform fillRect = fill.rectTransform;
+        fillRect.anchorMin = new Vector2(0f, 0.25f);
+        fillRect.anchorMax = new Vector2(1f, 0.75f);
+        fillRect.offsetMin = Vector2.zero;
+        fillRect.offsetMax = Vector2.zero;
+
+        GameObject handleObject = new("Handle", typeof(RectTransform), typeof(Image));
+        handleObject.transform.SetParent(sliderObject.transform, false);
+        Image handle = handleObject.GetComponent<Image>();
+        handle.color = new Color(0.95f, 0.92f, 0.84f, 1f);
+        RectTransform handleRect = handle.rectTransform;
+        handleRect.sizeDelta = new Vector2(28f, 28f);
+
+        Slider slider = sliderObject.GetComponent<Slider>();
+        slider.minValue = 0;
+        slider.maxValue = 100;
+        slider.wholeNumbers = true;
+        slider.fillRect = fillRect;
+        slider.handleRect = handleRect;
+        slider.targetGraphic = handle;
+        slider.value = 50;
+        return slider;
     }
 
     private static void SetAnchors(RectTransform transform, Vector2 minimum, Vector2 maximum)
