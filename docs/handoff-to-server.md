@@ -123,13 +123,16 @@
 
 ---
 
-## 요청 2 — 3-5 만족도 엔진 이식 명세를 보내 달라
+## 완료 보고 — 3-5 만족도 엔진 이식
 
-오늘 상태·욕구 이식이 끝났다. 다음은 클라이언트 설계 3단계의 만족도 엔진이다.
+**상태: 완료 · 2026-08-08**
 
-파이프라인 원본 `src/daily_special/domain/satisfaction.py`와
-`tests/test_satisfaction.py`의 **현재 고정 스냅샷**(테스트 전체)을 이식 명세로 넘겨 달라.
-클라이언트는 별도 요약 명세를 만들지 않고, 그 테스트를 Unity EditMode로 옮겨 전부 통과시키겠다.
-
-특히 이식에 필요한 입력 DTO의 경계와, 콘텐츠 `GuestRecord`·`DishRecord`·재료 식이 저촉을
-어느 계층에서 도메인 입력으로 바꾸는지 원본 기준으로 알려 달라. 서버 HTTP 호출은 붙이지 않는다.
+- 파이프라인 `satisfaction.py`를 순수 C# `SatisfactionEngine`으로 이식했다. 입력은 콘텐츠
+  레코드가 아닌 `GuestPersona`, `VisitState`, `ServedDish`, `ScoringNumbers`이며, 결과는
+  총점·항별 점수·축 점수·미충족 욕구·위반 식이를 함께 돌려준다.
+- `dietary_conflicts`는 명시적 요리 입력, `params`는 플레이어 조리 입력으로 둬 콘텐츠에 없는
+  두 값을 도메인이 추측하지 않는다. 콘텐츠→입력 변환(`Data/`)과 UI 연결은 아직 하지 않았다.
+- `tests/test_satisfaction.py`의 23개 명세 케이스를 Unity EditMode 테스트로 옮겼다.
+  전체 49/49, 새 만족도 명세 23/23 통과다.
+- `VisitNumbers.AffordableWalletMax`는 `MidpointRounding.AwayFromZero`로 바꿔 Java 반올림과
+  같은 방향을 유지한다. 서버 HTTP 호출은 추가하지 않았다.
