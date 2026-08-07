@@ -42,3 +42,25 @@ public sealed class LineRecord
     public string voice;
     public string text;
 }
+
+[Serializable]
+public sealed class IngredientRecord
+{
+    public string ingredient_id;
+    public string name;
+    public string kind;
+    public string description;
+    public int base_price;
+    public List<string> dietary_conflicts;
+}
+
+[Serializable]
+public sealed class DishRecord
+{
+    public string dish_id;
+    public string name;
+    public string description;
+    public List<string> need_tags;
+    public List<string> ingredient_ids;
+    public int base_price;
+}

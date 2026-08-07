@@ -58,6 +58,34 @@ public static class ContentLoader
         return package;
     }
 
+    public static ContentPackage<IngredientRecord> LoadIngredients()
+    {
+        return LoadPackage<IngredientRecord>("ingredients", "ingredients");
+    }
+
+    public static ContentPackage<DishRecord> LoadDishes()
+    {
+        return LoadPackage<DishRecord>("dishes", "dishes");
+    }
+
+    private static ContentPackage<T> LoadPackage<T>(string resourceName, string expectedKind)
+    {
+        TextAsset source = Resources.Load<TextAsset>(resourceName);
+        if (source == null)
+        {
+            throw new InvalidOperationException($"Resources에 {resourceName}.json이 없습니다.");
+        }
+
+        ContentPackage<T> package = JsonConvert.DeserializeObject<ContentPackage<T>>(source.text, Settings);
+        if (package == null)
+        {
+            throw new InvalidOperationException($"{resourceName}.json을 읽지 못했습니다.");
+        }
+
+        ValidatePackage(package, expectedKind);
+        return package;
+    }
+
     private static void ValidatePackage<T>(ContentPackage<T> package, string expectedKind)
     {
         if (package.kind != expectedKind)

@@ -92,3 +92,17 @@
 - 런타임 UI를 해당 TMP 폰트를 사용하도록 전환하고, `lines.json`의 `line_greet_weary_01`을 직접 로드해 검증 화면에 표시한다.
 - Unity Editor와 Android Studio Pixel 7 가상 기기 APK에서 `앉으니 살 것 같네…`를 확인했다. 한글과 U+2026 말줄임표 모두 깨지지 않았고, 소개문과도 분리돼 보인다.
 - 막힌 지점은 없다. 에디터 복구 폴더는 작업 산출물에서 제외한다.
+
+---
+
+## 완료 보고 — 3-3 2단계 하루 사이클
+
+**상태: 완료 · 2026-08-07**
+
+- 장보기 → 손님 1명 → 요리 → 반응 → 하루 종료의 버튼 기반 시연 흐름을 만들었다.
+- 임시 상태는 `LocalDayStateStore` 한 곳에 모았다. 그 안의 `VisitStateResponse`는 API 응답과 같은
+  `save_id`, `day_number`, `guest_id`, `hunger`, `condition`, `mood`, `wallet`, `needs` 필드를 가진다.
+- 로컬 값은 시연용 고정값(`tired` · `gloomy` · `mild` · `affordable`)이다. 서버 HTTP 호출,
+  VisitState/NeedResolver, 만족도 계산은 의도적으로 이식하지 않았다.
+- Unity Editor와 Android Studio Pixel 7 가상 기기 APK에서 전체 버튼 흐름을 끝까지 확인했다.
+- 막힌 지점은 없다. 다음 날 진행·수치 조절은 3단계 이후의 규칙/상태 작업으로 남긴다.
