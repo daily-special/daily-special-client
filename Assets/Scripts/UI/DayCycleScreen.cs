@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using DailySpecial.Domain;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -13,9 +15,16 @@ public sealed class DayCycleScreen : MonoBehaviour
     [SerializeField] private TextMeshProUGUI dialogueLabel;
     [SerializeField] private TextMeshProUGUI actionLabel;
     [SerializeField] private Button actionButton;
+    [SerializeField] private Slider heatSlider;
+    [SerializeField] private Slider cookTimeSlider;
+    [SerializeField] private Slider seasoningSlider;
+    [SerializeField] private TextMeshProUGUI heatValueLabel;
+    [SerializeField] private TextMeshProUGUI cookTimeValueLabel;
+    [SerializeField] private TextMeshProUGUI seasoningValueLabel;
 
     private GuestRecord guest;
     private DishRecord featuredDish;
+    private ContentPackage<IngredientRecord> ingredients;
     private ContentPackage<LineRecord> lines;
 
     public void Configure(
@@ -25,7 +34,13 @@ public sealed class DayCycleScreen : MonoBehaviour
         TextMeshProUGUI configuredDetailLabel,
         TextMeshProUGUI configuredDialogueLabel,
         TextMeshProUGUI configuredActionLabel,
-        Button configuredActionButton)
+        Button configuredActionButton,
+        Slider configuredHeatSlider,
+        Slider configuredCookTimeSlider,
+        Slider configuredSeasoningSlider,
+        TextMeshProUGUI configuredHeatValueLabel,
+        TextMeshProUGUI configuredCookTimeValueLabel,
+        TextMeshProUGUI configuredSeasoningValueLabel)
     {
         stateStore = configuredStateStore;
         phaseLabel = configuredPhaseLabel;
@@ -34,6 +49,12 @@ public sealed class DayCycleScreen : MonoBehaviour
         dialogueLabel = configuredDialogueLabel;
         actionLabel = configuredActionLabel;
         actionButton = configuredActionButton;
+        heatSlider = configuredHeatSlider;
+        cookTimeSlider = configuredCookTimeSlider;
+        seasoningSlider = configuredSeasoningSlider;
+        heatValueLabel = configuredHeatValueLabel;
+        cookTimeValueLabel = configuredCookTimeValueLabel;
+        seasoningValueLabel = configuredSeasoningValueLabel;
     }
 
     private void Awake()
@@ -41,8 +62,12 @@ public sealed class DayCycleScreen : MonoBehaviour
         try
         {
             actionButton.onClick.AddListener(Advance);
+            heatSlider.onValueChanged.AddListener(_ => RefreshCookingValues());
+            cookTimeSlider.onValueChanged.AddListener(_ => RefreshCookingValues());
+            seasoningSlider.onValueChanged.AddListener(_ => RefreshCookingValues());
             ContentPackage<GuestRecord> guests = ContentLoader.LoadGuests();
             ContentPackage<DishRecord> dishes = ContentLoader.LoadDishes();
+            ingredients = ContentLoader.LoadIngredients();
             lines = ContentLoader.LoadLines();
 
             guest = guests.items.First(item => item.guest_id == stateStore.GuestId);
@@ -87,6 +112,7 @@ public sealed class DayCycleScreen : MonoBehaviour
 
     private void Refresh()
     {
+        SetCookingControlsVisible(stateStore.Phase == DayPhase.Cooking);
         switch (stateStore.Phase)
         {
             case DayPhase.Shopping:
@@ -106,15 +132,18 @@ public sealed class DayCycleScreen : MonoBehaviour
             case DayPhase.Cooking:
                 phaseLabel.text = $"{stateStore.VisitState.day_number}일차 · 3. 요리";
                 guestLabel.text = featuredDish.name;
-                detailLabel.text = $"{featuredDish.description}\n가격 {featuredDish.base_price} · 태그: {string.Join(" · ", featuredDish.need_tags)}";
-                dialogueLabel.text = "천천히 끓여 한 그릇을 완성했습니다.";
+                detailLabel.text = $"{featuredDish.description}\n가격 {featuredDish.base_price} · 태그: {string.Join(" · ", featuredDish.need_tags)}\n아래 세 값을 맞춰 조리합니다.";
+                dialogueLabel.text = "손님 취향을 떠올리며 불, 시간, 간을 맞춥니다.";
+                RefreshCookingValues();
                 SetAction("손님에게 내기");
                 break;
             case DayPhase.Reaction:
+                Satisfaction satisfaction = EvaluateSatisfaction();
                 phaseLabel.text = $"{stateStore.VisitState.day_number}일차 · 4. 반응";
                 guestLabel.text = "오늘의 한 그릇";
-                detailLabel.text = "시연용 고정 성공 반응입니다. 실제 만족도 계산은 3단계에서 이식합니다.";
-                dialogueLabel.text = FindLine("reaction_high", null).text;
+                detailLabel.text = $"만족도 {satisfaction.Total * 100:0}%\n욕구 {satisfaction.NeedScore * 100:0}% · 취향 {satisfaction.TasteScore * 100:0}% · 예산 {satisfaction.BudgetScore * 100:0}% · 식이 {satisfaction.DietaryFactor * 100:0}%";
+                if (satisfaction.UnmetNeeds.Count > 0) detailLabel.text += $"\n놓친 욕구: {string.Join(" · ", satisfaction.UnmetNeeds)}";
+                dialogueLabel.text = FindReactionLine(satisfaction);
                 SetAction("하루 마치기");
                 break;
             case DayPhase.Complete:
@@ -130,6 +159,48 @@ public sealed class DayCycleScreen : MonoBehaviour
     private LineRecord FindLine(string situation, string subject)
     {
         return lines.items.First(item => item.situation == situation && item.subject == subject && item.voice == guest.voice);
+    }
+
+    private Satisfaction EvaluateSatisfaction()
+    {
+        Dictionary<string, int> parameters = new()
+        {
+            { "heat", Mathf.RoundToInt(heatSlider.value) },
+            { "cook_time", Mathf.RoundToInt(cookTimeSlider.value) },
+            { "seasoning", Mathf.RoundToInt(seasoningSlider.value) }
+        };
+        VisitState state = new(stateStore.VisitState.needs, stateStore.VisitState.wallet);
+        ServedDish dish = ContentSatisfactionMapper.ToServedDish(featuredDish, ingredients.items, parameters);
+        return new SatisfactionEngine(ScoringNumbers.Defaults()).Evaluate(ContentSatisfactionMapper.ToPersona(guest), state, dish);
+    }
+
+    private string FindReactionLine(Satisfaction satisfaction)
+    {
+        AxisScore missedAxis = satisfaction.AxisScores.FirstOrDefault(score => score.Direction != 0);
+        if (missedAxis != null)
+        {
+            string situation = missedAxis.Direction < 0 ? "feedback_low" : "feedback_high";
+            return FindLine(situation, missedAxis.Axis).text;
+        }
+
+        return FindLine(satisfaction.Total >= 0.7 ? "reaction_high" : "reaction_low", null).text;
+    }
+
+    private void RefreshCookingValues()
+    {
+        heatValueLabel.text = $"불 세기  {heatSlider.value:0}";
+        cookTimeValueLabel.text = $"조리 시간  {cookTimeSlider.value:0}";
+        seasoningValueLabel.text = $"간  {seasoningSlider.value:0}";
+    }
+
+    private void SetCookingControlsVisible(bool visible)
+    {
+        heatSlider.gameObject.SetActive(visible);
+        cookTimeSlider.gameObject.SetActive(visible);
+        seasoningSlider.gameObject.SetActive(visible);
+        heatValueLabel.gameObject.SetActive(visible);
+        cookTimeValueLabel.gameObject.SetActive(visible);
+        seasoningValueLabel.gameObject.SetActive(visible);
     }
 
     private void SetAction(string label)
