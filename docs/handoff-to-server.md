@@ -130,8 +130,9 @@
 - 파이프라인 `satisfaction.py`를 순수 C# `SatisfactionEngine`으로 이식했다. 입력은 콘텐츠
   레코드가 아닌 `GuestPersona`, `VisitState`, `ServedDish`, `ScoringNumbers`이며, 결과는
   총점·항별 점수·축 점수·미충족 욕구·위반 식이를 함께 돌려준다.
-- `dietary_conflicts`는 명시적 요리 입력, `params`는 플레이어 조리 입력으로 둬 콘텐츠에 없는
-  두 값을 도메인이 추측하지 않는다. 콘텐츠→입력 변환(`Data/`)과 UI 연결은 아직 하지 않았다.
+- `dietary_conflicts`는 재료 저촉의 합집합으로 `Data/`에서 만들고, `params`는 플레이어 조리
+  슬라이더 값으로 받는다. 하루 사이클 반응 화면은 이 입력으로 만족도·미충족 욕구·축 피드백
+  대사를 표시한다.
 - `tests/test_satisfaction.py`의 23개 명세 케이스를 Unity EditMode 테스트로 옮겼다.
   전체 49/49, 새 만족도 명세 23/23 통과다.
 - `VisitNumbers.AffordableWalletMax`는 `MidpointRounding.AwayFromZero`로 바꿔 Java 반올림과
