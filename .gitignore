@@ -21,6 +21,7 @@ Assets/_Recovery.meta
 *.app
 
 # 로컬 Unity 검증 출력
+TestResults/
 TestResults-*.xml
 Unity-*.log
 
