@@ -31,6 +31,7 @@ public static class ContentBootstrapBuilder
         TextMeshProUGUI phaseLabel = CreateLabel(panel.transform, font, "Phase", 38, FontStyles.Bold);
         TextMeshProUGUI guestLabel = CreateLabel(panel.transform, font, "Guest", 46, FontStyles.Bold);
         TextMeshProUGUI detailLabel = CreateLabel(panel.transform, font, "Detail", 32, FontStyles.Normal);
+        TextMeshProUGUI relationshipLabel = CreateLabel(panel.transform, font, "Relationship", 26, FontStyles.Normal);
         TextMeshProUGUI dialogueLabel = CreateLabel(panel.transform, font, "Dialogue", 34, FontStyles.Normal);
         Slider heatSlider = CreateSlider(panel.transform, "HeatSlider");
         Slider cookTimeSlider = CreateSlider(panel.transform, "CookTimeSlider");
@@ -44,8 +45,9 @@ public static class ContentBootstrapBuilder
         SetAnchors(titleLabel.rectTransform, new Vector2(0.10f, 0.86f), new Vector2(0.90f, 0.95f));
         SetAnchors(phaseLabel.rectTransform, new Vector2(0.10f, 0.76f), new Vector2(0.90f, 0.84f));
         SetAnchors(guestLabel.rectTransform, new Vector2(0.10f, 0.64f), new Vector2(0.90f, 0.74f));
-        SetAnchors(detailLabel.rectTransform, new Vector2(0.10f, 0.48f), new Vector2(0.90f, 0.62f));
-        SetAnchors(dialogueLabel.rectTransform, new Vector2(0.10f, 0.39f), new Vector2(0.90f, 0.46f));
+        SetAnchors(detailLabel.rectTransform, new Vector2(0.10f, 0.61f), new Vector2(0.90f, 0.69f));
+        SetAnchors(relationshipLabel.rectTransform, new Vector2(0.10f, 0.49f), new Vector2(0.90f, 0.59f));
+        SetAnchors(dialogueLabel.rectTransform, new Vector2(0.10f, 0.40f), new Vector2(0.90f, 0.47f));
         SetAnchors(heatValueLabel.rectTransform, new Vector2(0.10f, 0.33f), new Vector2(0.38f, 0.37f));
         SetAnchors(cookTimeValueLabel.rectTransform, new Vector2(0.10f, 0.27f), new Vector2(0.38f, 0.31f));
         SetAnchors(seasoningValueLabel.rectTransform, new Vector2(0.10f, 0.21f), new Vector2(0.38f, 0.25f));
@@ -60,7 +62,7 @@ public static class ContentBootstrapBuilder
 
         GameObject screenObject = new("DayCycleScreen", typeof(DayCycleScreen));
         DayCycleScreen screen = screenObject.GetComponent<DayCycleScreen>();
-        screen.Configure(stateStore, phaseLabel, guestLabel, detailLabel, dialogueLabel, actionLabel, actionButton,
+        screen.Configure(stateStore, phaseLabel, guestLabel, detailLabel, relationshipLabel, dialogueLabel, actionLabel, actionButton,
             heatSlider, cookTimeSlider, seasoningSlider, heatValueLabel, cookTimeValueLabel, seasoningValueLabel);
 
         EditorSceneManager.SaveScene(scene, "Assets/Scenes/SampleScene.unity");

@@ -139,6 +139,12 @@ public sealed class LocalDayStateStore : MonoBehaviour
         return rules.Disclose(ToDomainRelationship(RelationshipState));
     }
 
+    public Tier GetRelationshipTier()
+    {
+        RelationshipRules rules = new(RelationshipNumbers.Defaults());
+        return rules.TierOf(ToDomainRelationship(RelationshipState));
+    }
+
     private LocalRelationshipState FindOrCreateRelationship(string id)
     {
         if (string.IsNullOrWhiteSpace(id))
