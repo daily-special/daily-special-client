@@ -12,6 +12,7 @@ public sealed class DayCycleScreen : MonoBehaviour
     [SerializeField] private TextMeshProUGUI phaseLabel;
     [SerializeField] private TextMeshProUGUI guestLabel;
     [SerializeField] private TextMeshProUGUI detailLabel;
+    [SerializeField] private TextMeshProUGUI relationshipLabel;
     [SerializeField] private TextMeshProUGUI dialogueLabel;
     [SerializeField] private TextMeshProUGUI actionLabel;
     [SerializeField] private Button actionButton;
@@ -22,16 +23,20 @@ public sealed class DayCycleScreen : MonoBehaviour
     [SerializeField] private TextMeshProUGUI cookTimeValueLabel;
     [SerializeField] private TextMeshProUGUI seasoningValueLabel;
 
+    private List<GuestRecord> guests;
     private GuestRecord guest;
     private DishRecord featuredDish;
     private ContentPackage<IngredientRecord> ingredients;
     private ContentPackage<LineRecord> lines;
+    private int guestIndex;
+    private Satisfaction servedSatisfaction;
 
     public void Configure(
         LocalDayStateStore configuredStateStore,
         TextMeshProUGUI configuredPhaseLabel,
         TextMeshProUGUI configuredGuestLabel,
         TextMeshProUGUI configuredDetailLabel,
+        TextMeshProUGUI configuredRelationshipLabel,
         TextMeshProUGUI configuredDialogueLabel,
         TextMeshProUGUI configuredActionLabel,
         Button configuredActionButton,
@@ -46,6 +51,7 @@ public sealed class DayCycleScreen : MonoBehaviour
         phaseLabel = configuredPhaseLabel;
         guestLabel = configuredGuestLabel;
         detailLabel = configuredDetailLabel;
+        relationshipLabel = configuredRelationshipLabel;
         dialogueLabel = configuredDialogueLabel;
         actionLabel = configuredActionLabel;
         actionButton = configuredActionButton;
@@ -65,12 +71,15 @@ public sealed class DayCycleScreen : MonoBehaviour
             heatSlider.onValueChanged.AddListener(_ => RefreshCookingValues());
             cookTimeSlider.onValueChanged.AddListener(_ => RefreshCookingValues());
             seasoningSlider.onValueChanged.AddListener(_ => RefreshCookingValues());
-            ContentPackage<GuestRecord> guests = ContentLoader.LoadGuests();
+            guests = ContentLoader.LoadGuests().items;
             ContentPackage<DishRecord> dishes = ContentLoader.LoadDishes();
             ingredients = ContentLoader.LoadIngredients();
             lines = ContentLoader.LoadLines();
 
-            guest = guests.items.First(item => item.guest_id == stateStore.GuestId);
+            guestIndex = guests.FindIndex(item => item.guest_id == stateStore.GuestId);
+            if (guestIndex < 0) guestIndex = 0;
+            guest = guests[guestIndex];
+            stateStore.Configure(guest.guest_id);
             stateStore.Initialize(guest.preferred_needs);
             featuredDish = dishes.items.First(item => item.dish_id == "dish_barley_bean_porridge");
             Refresh();
@@ -95,13 +104,19 @@ public sealed class DayCycleScreen : MonoBehaviour
                 stateStore.ChooseDish(featuredDish.dish_id);
                 break;
             case DayPhase.Cooking:
+                servedSatisfaction = EvaluateSatisfaction();
+                stateStore.ApplyRelationship(
+                    servedSatisfaction.Total,
+                    servedSatisfaction.AxisScores
+                        .Where(score => score.Direction != 0)
+                        .Select(score => score.Axis));
                 stateStore.ServeDish();
                 break;
             case DayPhase.Reaction:
                 stateStore.FinishDay();
                 break;
             case DayPhase.Complete:
-                stateStore.AdvanceDay(guest.preferred_needs);
+                AdvanceToNextGuest();
                 break;
             default:
                 return;
@@ -112,6 +127,7 @@ public sealed class DayCycleScreen : MonoBehaviour
 
     private void Refresh()
     {
+        relationshipLabel.text = BuildRelationshipText();
         SetCookingControlsVisible(stateStore.Phase == DayPhase.Cooking);
         switch (stateStore.Phase)
         {
@@ -126,7 +142,8 @@ public sealed class DayCycleScreen : MonoBehaviour
                 phaseLabel.text = $"{stateStore.VisitState.day_number}일차 · 2. 손님 맞이";
                 guestLabel.text = $"{guest.name} · {guest.title}";
                 detailLabel.text = $"허기 {stateStore.VisitState.hunger} · {stateStore.VisitState.condition} · {stateStore.VisitState.mood}\n예산 {stateStore.VisitState.wallet} · 오늘의 욕구: {string.Join(" · ", stateStore.VisitState.needs)}";
-                dialogueLabel.text = FindLine("order", stateStore.VisitState.needs[0]).text;
+                dialogueLabel.text = FindLine("greet", null).text + "\n"
+                    + FindLine("order", stateStore.VisitState.needs[0]).text;
                 SetAction($"{featuredDish.name} 요리하기");
                 break;
             case DayPhase.Cooking:
@@ -138,7 +155,7 @@ public sealed class DayCycleScreen : MonoBehaviour
                 SetAction("손님에게 내기");
                 break;
             case DayPhase.Reaction:
-                Satisfaction satisfaction = EvaluateSatisfaction();
+                Satisfaction satisfaction = servedSatisfaction ?? EvaluateSatisfaction();
                 phaseLabel.text = $"{stateStore.VisitState.day_number}일차 · 4. 반응";
                 guestLabel.text = "오늘의 한 그릇";
                 detailLabel.text = $"만족도 {satisfaction.Total * 100:0}%\n욕구 {satisfaction.NeedScore * 100:0}% · 취향 {satisfaction.TasteScore * 100:0}% · 예산 {satisfaction.BudgetScore * 100:0}% · 식이 {satisfaction.DietaryFactor * 100:0}%";
@@ -159,6 +176,69 @@ public sealed class DayCycleScreen : MonoBehaviour
     private LineRecord FindLine(string situation, string subject)
     {
         return lines.items.First(item => item.situation == situation && item.subject == subject && item.voice == guest.voice);
+    }
+
+    private void AdvanceToNextGuest()
+    {
+        guestIndex = (guestIndex + 1) % guests.Count;
+        guest = guests[guestIndex];
+        stateStore.Configure(guest.guest_id);
+        stateStore.AdvanceDay(guest.preferred_needs);
+        servedSatisfaction = null;
+    }
+
+    private string BuildRelationshipText()
+    {
+        LocalRelationshipState state = stateStore.RelationshipState;
+        Disclosure disclosure = stateStore.GetDisclosure();
+        List<string> learned = new();
+
+        if (disclosure.PreferredNeeds)
+        {
+            learned.Add("평소 욕구: " + string.Join(", ", guest.preferred_needs ?? new List<string>()));
+        }
+
+        IEnumerable<string> axes = disclosure.AllAxes
+            ? guest.ideal_ranges.Keys
+            : disclosure.RevealedAxes;
+        foreach (string axis in axes.OrderBy(axis => axis))
+        {
+            if (guest.ideal_ranges.TryGetValue(axis, out IdealRangeRecord range))
+            {
+                learned.Add($"{AxisName(axis)}: {range.low}~{range.high}");
+            }
+        }
+
+        if (disclosure.Dietary)
+        {
+            learned.Add((guest.dietary ?? new List<string>()).Count == 0
+                ? "식이 제한: 없음"
+                : "식이 제한: " + string.Join(", ", guest.dietary));
+        }
+
+        string knowledge = learned.Count == 0 ? "아직 알게 된 정보가 없습니다." : string.Join(" · ", learned);
+        return $"관계: {TierName(stateStore.GetRelationshipTier())} ({state.affinity}/100)\n알게 된 것: {knowledge}";
+    }
+
+    private static string TierName(Tier tier)
+    {
+        return tier switch
+        {
+            Tier.Familiar => "낯익은 손님",
+            Tier.Regular => "단골",
+            _ => "낯선 손님"
+        };
+    }
+
+    private static string AxisName(string axis)
+    {
+        return axis switch
+        {
+            "heat" => "불 세기",
+            "cook_time" => "조리 시간",
+            "seasoning" => "간",
+            _ => axis
+        };
     }
 
     private Satisfaction EvaluateSatisfaction()
