@@ -142,6 +142,20 @@
 
 ## 요청 3 — 4단계 관계와 공개 취향 명세
 
+### 완료 보고 — 3-6 관계와 정보 공개 규칙 이식
+
+**상태: 완료 · 2026-08-08**
+
+- 서버의 `RelationshipRulesTest` 25건을 Unity EditMode 테스트 25건으로 그대로 옮겨 모두 통과했습니다.
+  친밀도 증감은 `Math.Floor((satisfaction - 0.4) * 20 + 0.5)`의 원래 연산 순서를 보존해
+  만족도 `0.375`에서 `-1`이 되는 경계도 고정했습니다.
+- `Relationship`, `RelationshipNumbers`, `RelationshipRules`, `Disclosure`, `Tier`는
+  UnityEngine 참조 없는 `DailySpecial.Domain` 순수 C#입니다. 친밀도 단계와 축 힌트 3회 공개,
+  regular 단계의 전체 공개를 포함합니다.
+- `LocalDayStateStore`가 손님 ID별로 친밀도와 축 힌트를 한곳에 보관합니다. 현재는 로컬만
+  사용하며, 만족도와 벗어난 축을 받아 관계만 갱신합니다. 서버 HTTP와 관계 UI는 추가하지 않았습니다.
+- Unity EditMode 전체 결과는 74/74 통과(기존 49건 + 관계 25건)입니다.
+
 3단계의 오늘 상태·욕구·만족도 반응까지 클라이언트에서 완료했다. 다음 단계는 손님과의
 관계가 쌓이며 고정 페르소나 중 일부 취향이 플레이어에게 공개되는 흐름이다. 이 값들은
 플레이 중에 바뀌므로 서버가 소유해야 한다.

@@ -17,6 +17,21 @@ public sealed class VisitStateResponse
     public List<string> needs;
 }
 
+[Serializable]
+public sealed class AxisHintState
+{
+    public string axis;
+    public int count;
+}
+
+[Serializable]
+public sealed class LocalRelationshipState
+{
+    public string guest_id;
+    public int affinity;
+    public List<AxisHintState> axis_hints = new();
+}
+
 public enum DayPhase
 {
     Shopping,
@@ -30,6 +45,7 @@ public sealed class LocalDayStateStore : MonoBehaviour
 {
     [SerializeField] private VisitStateResponse visitState;
     [SerializeField] private string guestId;
+    [SerializeField] private List<LocalRelationshipState> relationships = new();
 
     public VisitStateResponse VisitState => visitState;
     public DayPhase Phase { get; private set; }
@@ -37,6 +53,8 @@ public sealed class LocalDayStateStore : MonoBehaviour
     public string SelectedDishId { get; private set; }
 
     public string GuestId => string.IsNullOrWhiteSpace(guestId) ? visitState?.guest_id : guestId;
+
+    public LocalRelationshipState RelationshipState => FindOrCreateRelationship(GuestId);
 
     public void Configure(string configuredGuestId)
     {
@@ -70,6 +88,7 @@ public sealed class LocalDayStateStore : MonoBehaviour
             wallet = generated.Wallet,
             needs = new NeedResolver(NeedNumbers.Defaults()).Resolve(generated, traits).Select(NeedCatalog.ToSlug).ToList()
         };
+        FindOrCreateRelationship(guestId);
         Phase = DayPhase.Shopping;
     }
 
@@ -99,5 +118,53 @@ public sealed class LocalDayStateStore : MonoBehaviour
     {
         visitState.day_number++;
         Initialize(preferredNeedSlugs);
+    }
+
+    public void ApplyRelationship(double satisfaction, IEnumerable<string> offAxes)
+    {
+        LocalRelationshipState localState = RelationshipState;
+        RelationshipRules rules = new(RelationshipNumbers.Defaults());
+        Relationship updated = rules.AfterVisit(ToDomainRelationship(localState), satisfaction, offAxes);
+
+        localState.affinity = updated.Affinity;
+        localState.axis_hints = updated.AxisHints
+            .OrderBy(hint => hint.Key, StringComparer.Ordinal)
+            .Select(hint => new AxisHintState { axis = hint.Key, count = hint.Value })
+            .ToList();
+    }
+
+    public Disclosure GetDisclosure()
+    {
+        RelationshipRules rules = new(RelationshipNumbers.Defaults());
+        return rules.Disclose(ToDomainRelationship(RelationshipState));
+    }
+
+    private LocalRelationshipState FindOrCreateRelationship(string id)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            throw new InvalidOperationException("손님 식별자가 없습니다.");
+        }
+
+        LocalRelationshipState state = relationships.FirstOrDefault(item => item.guest_id == id);
+        if (state != null)
+        {
+            return state;
+        }
+
+        state = new LocalRelationshipState { guest_id = id };
+        relationships.Add(state);
+        return state;
+    }
+
+    private static Relationship ToDomainRelationship(LocalRelationshipState state)
+    {
+        Dictionary<string, int> hints = new(StringComparer.Ordinal);
+        foreach (AxisHintState hint in state.axis_hints ?? new List<AxisHintState>())
+        {
+            hints.Add(hint.axis, hint.count);
+        }
+
+        return new Relationship(state.affinity, hints);
     }
 }
